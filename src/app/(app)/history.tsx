@@ -1,5 +1,3 @@
-import { ScreenPlaceholder } from '@/components/screen-placeholder';
+import { HistoryScreen } from '@/features/history/history-screen';
 
-export default function HistoryScreen() {
-  return <ScreenPlaceholder title="Historial" description="Tus predicciones anteriores: datos enviados y resultado." />;
-}
+export default HistoryScreen;
