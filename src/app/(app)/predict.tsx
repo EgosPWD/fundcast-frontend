@@ -1,5 +1,5 @@
-import { ScreenPlaceholder } from '@/components/screen-placeholder';
+import { PredictionForm } from '@/features/predict/prediction-form';
 
 export default function PredictScreen() {
-  return <ScreenPlaceholder title="Predecir" description="Envía los datos de una ronda y obtén el monto estimado." />;
+  return <PredictionForm />;
 }
