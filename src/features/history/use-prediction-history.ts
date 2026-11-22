@@ -38,6 +38,9 @@ export function usePredictionHistory() {
 
   const total = state.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // The label and the pager follow the page whose rows are on screen, so a failed page
+  // change keeps showing "Página 1" with page 1 rows (plus the error), not a mix.
+  const shownPage = state.data?.page ?? page;
 
   function goTo(next: number) {
     setState((prev) => ({ ...prev, loading: true }));
@@ -47,12 +50,12 @@ export function usePredictionHistory() {
 
   return {
     ...state,
-    page,
+    page: shownPage,
     totalPages,
-    hasPrevious: page > 1,
-    hasNext: page < totalPages,
-    previous: () => goTo(page - 1),
-    next: () => goTo(page + 1),
+    hasPrevious: shownPage > 1,
+    hasNext: shownPage < totalPages,
+    previous: () => goTo(shownPage - 1),
+    next: () => goTo(shownPage + 1),
     refresh: () => goTo(1),
   };
 }

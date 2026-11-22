@@ -161,3 +161,20 @@ it('does not show the user_id to a plain user', async () => {
   await screen.findByText('Series B · Life Sciences · India');
   expect(screen.queryByText('Usuario 42')).toBeNull();
 });
+
+it('keeps the page label consistent with the rows when a page change fails', async () => {
+  fetchMock
+    .mockResolvedValueOnce(respond(page([item({ id: 1 })], 25, 1)))
+    .mockResolvedValueOnce(respond({ detail: 'Error del servidor' }, 500))
+    .mockResolvedValueOnce(respond(page([item({ id: 2 })], 25, 2)));
+  await render(<HistoryScreen />);
+  expect(await screen.findByText('Página 1 de 2')).toBeTruthy();
+
+  await fireEvent.press(screen.getByRole('button', { name: 'Siguiente' }));
+
+  expect(await screen.findByText('Error del servidor')).toBeTruthy();
+  expect(screen.getByText('Página 1 de 2')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: 'Siguiente' }));
+  expect(await screen.findByText('Página 2 de 2')).toBeTruthy();
+  expect(requestedUrl(2).searchParams.get('page')).toBe('2');
+});
