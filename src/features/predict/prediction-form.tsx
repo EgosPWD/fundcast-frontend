@@ -67,11 +67,14 @@ export function PredictionForm() {
 
   function update(field: PredictField, text: string) {
     setValues((current) => ({ ...current, [field]: text }));
+    // The shown estimate belongs to the previous inputs: hide it as soon as they change.
+    setResult(null);
   }
 
   async function submit() {
     const validation = validatePredictForm(values);
     if (!validation.ok) {
+      setResult(null);
       setError(validation.error);
       return;
     }

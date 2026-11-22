@@ -155,3 +155,17 @@ it('explains a 503 as no active model', async () => {
 
   expect(await screen.findByText('No hay un modelo activo todavía.')).toBeTruthy();
 });
+
+it('hides the previous result when the form changes or fails validation', async () => {
+  mockApi();
+  await render(<PredictScreen />);
+  await fillRequired();
+  await submit();
+  expect(await screen.findByText('US$ 4.15 M')).toBeTruthy();
+
+  await fireEvent.changeText(screen.getByLabelText('Año de fundación'), '2030');
+
+  expect(screen.queryByText('US$ 4.15 M')).toBeNull();
+  await submit();
+  expect(screen.queryByText('US$ 4.15 M')).toBeNull();
+});
