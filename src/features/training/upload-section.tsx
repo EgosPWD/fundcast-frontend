@@ -20,7 +20,15 @@ export function UploadSection({ token }: { token: string | null }) {
   const [result, setResult] = useState<TrainingFileResponse | null>(null);
 
   async function pickAndUpload() {
-    const picked = await DocumentPicker.getDocumentAsync({ type: CSV_TYPES, base64: false });
+    let picked: DocumentPicker.DocumentPickerResult;
+    try {
+      picked = await DocumentPicker.getDocumentAsync({ type: CSV_TYPES, base64: false });
+    } catch {
+      // No document provider, another picker already open, unreadable asset...
+      setResult(null);
+      setError('No se pudo abrir el selector de archivos. Inténtalo de nuevo.');
+      return;
+    }
     if (picked.canceled) return;
     const asset = picked.assets[0];
     const invalid = validateCsvAsset(asset);

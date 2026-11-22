@@ -137,6 +137,17 @@ describe('upload training CSV', () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect(screen.queryByRole('alert')).toBeNull();
   });
+
+  it('shows a message when the file picker itself fails', async () => {
+    pickMock.mockRejectedValue(new Error('Another document picker is already open'));
+    const fetchMock = mockFetch(200, {});
+    await render(<TrainingScreen />);
+
+    await fireEvent.press(uploadButton());
+
+    expect(await screen.findByText('No se pudo abrir el selector de archivos. Inténtalo de nuevo.')).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
 
 describe('retrain', () => {
