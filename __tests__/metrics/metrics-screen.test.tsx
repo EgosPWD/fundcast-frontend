@@ -103,8 +103,8 @@ it('marks the acceptance criteria as met for the real numbers', async () => {
   await render(<MetricsScreen />);
 
   const card = within(await screen.findByLabelText('Modelo activo'));
-  expect(card.getByText('R² ≥ 0.55: cumple')).toBeTruthy();
-  expect(card.getByText('MAE_log ≤ 0.40: cumple')).toBeTruthy();
+  expect(card.getByText('R² ≥ 0.55: cumple (0.6153)')).toBeTruthy();
+  expect(card.getByText('MAE_log ≤ 0.40: cumple (0.3504)')).toBeTruthy();
 });
 
 it('marks the acceptance criteria as not met when the metrics fall short', async () => {
@@ -113,8 +113,8 @@ it('marks the acceptance criteria as not met when the metrics fall short', async
   await render(<MetricsScreen />);
 
   const card = within(await screen.findByLabelText('Modelo activo'));
-  expect(card.getByText('R² ≥ 0.55: no cumple')).toBeTruthy();
-  expect(card.getByText('MAE_log ≤ 0.40: no cumple')).toBeTruthy();
+  expect(card.getByText('R² ≥ 0.55: no cumple (0.5000)')).toBeTruthy();
+  expect(card.getByText('MAE_log ≤ 0.40: no cumple (0.4500)')).toBeTruthy();
 });
 
 it('renders every version in the history with the active one marked', async () => {
@@ -167,4 +167,38 @@ it('reloads the metrics when "Actualizar" is pressed', async () => {
 
   expect(await screen.findByText('Versión 5')).toBeTruthy();
   expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+it('shows the exact value next to each criterion, so a borderline miss is not confusing', async () => {
+  const borderline = version({ metrics: { ...ACTIVE.metrics, r2: 0.5497, mae_log: 0.4004 } });
+  mockFetch([ok({ active: borderline, versions: [borderline] })]);
+  await render(<MetricsScreen />);
+
+  const card = within(await screen.findByLabelText('Modelo activo'));
+  expect(card.getByText('R² ≥ 0.55: no cumple (0.5497)')).toBeTruthy();
+  expect(card.getByText('MAE_log ≤ 0.40: no cumple (0.4004)')).toBeTruthy();
+});
+
+it('clears the previous error while retrying with "Actualizar"', async () => {
+  let release!: (value: unknown) => void;
+  const fetchMock = jest
+    .fn()
+    .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({ detail: 'Servicio no disponible' }) })
+    .mockReturnValueOnce(new Promise((resolve) => (release = resolve)));
+  globalThis.fetch = fetchMock as unknown as typeof fetch;
+  await render(<MetricsScreen />);
+  expect(await screen.findByText('Servicio no disponible')).toBeTruthy();
+
+  await fireEvent.press(screen.getByRole('button', { name: 'Actualizar' }));
+
+  expect(screen.queryByText('Servicio no disponible')).toBeNull();
+  release({ ok: true, status: 200, json: async () => ({ active: ACTIVE, versions: [ACTIVE] }) });
+  expect(await screen.findByText('Versión 5')).toBeTruthy();
+});
+
+it('describes MdAPE as a percentage error', async () => {
+  mockFetch([ok({ active: ACTIVE, versions: [ACTIVE] })]);
+  await render(<MetricsScreen />);
+
+  expect(await screen.findByText(/^Error porcentual mediano/)).toBeTruthy();
 });

@@ -40,6 +40,7 @@ export function useMetrics(): MetricsState {
   }, [token, attempt]);
 
   function reload() {
+    setError(null);
     setLoading(true);
     setAttempt((n) => n + 1);
   }

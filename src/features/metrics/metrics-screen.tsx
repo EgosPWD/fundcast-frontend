@@ -36,10 +36,12 @@ function MetricRow({ label, value, help }: { label: string; value: string; help:
   );
 }
 
-function Criterion({ label, met }: { label: string; met: boolean }) {
+// The card rounds metrics to 3 decimals; the criterion shows 4 so a value such as 0.5497
+// ("0.550" on the card) visibly explains why it does not meet R² ≥ 0.55.
+function Criterion({ label, met, value }: { label: string; met: boolean; value: number }) {
   return (
     <ThemedText type="smallBold" style={{ color: met ? MET_COLOR : NOT_MET_COLOR }}>
-      {`${label}: ${met ? 'cumple' : 'no cumple'}`}
+      {`${label}: ${met ? 'cumple' : 'no cumple'} (${value.toFixed(4)})`}
     </ThemedText>
   );
 }
@@ -72,7 +74,7 @@ function ActiveModelCard({ model }: { model: ModelVersionResponse }) {
       <MetricRow
         label="MdAPE"
         value={formatPercent(metrics.mdape)}
-        help="Error mediano en USD: la mitad de las estimaciones se equivoca menos que esto."
+        help="Error porcentual mediano (sobre el monto en USD): la mitad de las estimaciones se equivoca menos que este porcentaje."
       />
       <MetricRow
         label="Cobertura ±50 %"
@@ -82,8 +84,12 @@ function ActiveModelCard({ model }: { model: ModelVersionResponse }) {
 
       <View style={styles.section}>
         <ThemedText type="smallBold">Criterios de aceptación</ThemedText>
-        <Criterion label={`R² ≥ ${ACCEPTANCE.minR2.toFixed(2)}`} met={criteria.r2} />
-        <Criterion label={`MAE_log ≤ ${ACCEPTANCE.maxMaeLog.toFixed(2)}`} met={criteria.maeLog} />
+        <Criterion label={`R² ≥ ${ACCEPTANCE.minR2.toFixed(2)}`} met={criteria.r2} value={metrics.r2} />
+        <Criterion
+          label={`MAE_log ≤ ${ACCEPTANCE.maxMaeLog.toFixed(2)}`}
+          met={criteria.maeLog}
+          value={metrics.mae_log}
+        />
       </View>
 
       <View style={styles.section}>
