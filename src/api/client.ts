@@ -33,10 +33,13 @@ export interface RequestOptions {
   query?: Record<string, QueryValue>;
 }
 
-let onUnauthorized: (() => void) | null = null;
+let onUnauthorized: ((token: string) => void) | null = null;
 
-/** Called when an authenticated request gets a 401 (expired or invalid token). */
-export function setUnauthorizedHandler(handler: (() => void) | null): void {
+/**
+ * Called with the rejected token when an authenticated request gets a 401 (expired or
+ * invalid token), so the session can ignore a late 401 for a token it already replaced.
+ */
+export function setUnauthorizedHandler(handler: ((token: string) => void) | null): void {
   onUnauthorized = handler;
 }
 
@@ -78,7 +81,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   if (!response.ok) {
     const detail = await readDetail(response);
-    if (response.status === 401 && token) onUnauthorized?.();
+    if (response.status === 401 && token) onUnauthorized?.(token);
     throw new ApiError(response.status, detail);
   }
   try {

@@ -117,6 +117,7 @@ describe('apiRequest', () => {
     await expect(apiRequest('/metrics', { token: 'expired' })).rejects.toBeInstanceOf(ApiError);
 
     expect(onUnauthorized).toHaveBeenCalledTimes(1);
+    expect(onUnauthorized).toHaveBeenCalledWith('expired');
   });
 
   it('does not call the unauthorized handler for a failed login (no token sent)', async () => {
