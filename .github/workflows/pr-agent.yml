@@ -31,9 +31,6 @@ jobs:
           OPENAI__API_BASE: https://opencode.ai/inference/go/openai/v1
           CONFIG__MODEL: openai/deepseek-v4.1-flash
           CONFIG__FALLBACK_MODELS: "[]"
-          # The model is not in PR-Agent's/LiteLLM's tables: give it an input-token budget.
-          # Conservative assumption (not verified against opencode); raise it if the model allows more.
-          CONFIG__CUSTOM_MODEL_MAX_TOKENS: "64000"
           OPENAI_CUSTOM_HEADERS: |-
             x-opencode-session: pr-agent-${{ github.repository_id }}
             User-Agent: pr-agent-action/0.50
