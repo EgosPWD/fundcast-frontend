@@ -11,6 +11,7 @@ function storage(): Storage | null {
 }
 
 export const tokenStorage = {
+  // Callers handle a rejection (e.g. getItem throwing in a sandboxed iframe).
   get: async () => storage()?.getItem(KEY) ?? null,
   set: async (token: string) => storage()?.setItem(KEY, token),
   clear: async () => storage()?.removeItem(KEY),

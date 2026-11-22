@@ -21,7 +21,7 @@ describe('decodeClaims', () => {
     expect(claims?.role).toBe('user');
   });
 
-  it.each([['not-a-jwt'], ['a.b.c'], [token({ sub: '1', role: 'root', exp: 1 })], [token({ role: 'user' })]])(
+  it.each([['not-a-jwt'], ['a.b.c'], [token({ sub: '1', role: 'root', exp: 1 })], [token({ role: 'user' })], [token({ sub: '', role: 'user', exp: 2_000_000_000 })]])(
     'returns null for a malformed token or unknown role: %s',
     (value) => {
       expect(decodeClaims(value)).toBeNull();

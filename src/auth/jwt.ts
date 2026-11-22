@@ -21,9 +21,10 @@ export function decodeClaims(token: string): Claims | null {
   if (parts.length !== 3) return null;
   try {
     const payload = JSON.parse(decodeBase64Url(parts[1])) as Record<string, unknown>;
-    const userId = Number(payload.sub);
-    const { role, exp } = payload;
-    if (!Number.isInteger(userId) || (role !== 'user' && role !== 'admin')) return null;
+    const { sub, role, exp } = payload;
+    if (typeof sub !== 'string' || !/^\d+$/.test(sub)) return null;
+    if (role !== 'user' && role !== 'admin') return null;
+    const userId = Number(sub);
     if (typeof exp !== 'number') return null;
     return { userId, role, expiresAt: exp * 1000 };
   } catch {

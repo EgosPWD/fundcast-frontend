@@ -1,4 +1,13 @@
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import * as authApi from '@/api/auth';
 import { setUnauthorizedHandler } from '@/api/client';
@@ -30,11 +39,17 @@ function usable(token: string | null): { token: string; role: Role } | null {
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>('loading');
   const [current, setCurrent] = useState<{ token: string; role: Role } | null>(null);
+  // The 401 handler runs outside React: it reads the live token through this ref.
+  const currentToken = useRef<string | null>(null);
+  useEffect(() => {
+    currentToken.current = current?.token ?? null;
+  }, [current]);
 
   const signOut = useCallback(async () => {
     setCurrent(null);
     setStatus('signedOut');
-    await tokenStorage.clear();
+    // A storage failure must not leave the user signed in on screen.
+    await tokenStorage.clear().catch(() => undefined);
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
@@ -56,9 +71,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    tokenStorage.get().then(async (stored) => {
-      const restored = usable(stored);
-      if (stored && !restored) await tokenStorage.clear();
+    async function restore(): Promise<{ token: string; role: Role } | null> {
+      try {
+        const stored = await tokenStorage.get();
+        const restored = usable(stored);
+        if (stored && !restored) await tokenStorage.clear();
+        return restored;
+      } catch {
+        // Unreadable storage (invalidated keystore, blocked localStorage): start signed out.
+        await tokenStorage.clear().catch(() => undefined);
+        return null;
+      }
+    }
+    restore().then((restored) => {
       if (!active) return;
       setCurrent(restored);
       setStatus(restored ? 'signedIn' : 'signedOut');
@@ -69,7 +94,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    setUnauthorizedHandler(() => void signOut());
+    setUnauthorizedHandler((rejected) => {
+      // Ignore a late 401 for a token that was already replaced by a new sign-in.
+      if (rejected === currentToken.current) void signOut();
+    });
     return () => setUnauthorizedHandler(null);
   }, [signOut]);
 

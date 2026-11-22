@@ -130,3 +130,39 @@ it('signs out when an authenticated request gets a 401', async () => {
 
   await waitFor(() => expect(screen.getByText('signedOut:-')).toBeTruthy());
 });
+
+it('falls back to signed out when the stored token cannot be read', async () => {
+  (SecureStore.getItemAsync as jest.Mock).mockRejectedValueOnce(new Error('keystore decrypt failed'));
+
+  render(
+    <SessionProvider>
+      <Probe />
+    </SessionProvider>,
+  );
+
+  await waitFor(() => expect(screen.getByText('signedOut:-')).toBeTruthy(), { timeout: 1000 });
+});
+
+it('ignores a late 401 for a token that is no longer current', async () => {
+  await SecureStore.setItemAsync('fundcast.token', jwt('user'));
+  await renderSession();
+  const oldToken = session.token!;
+  let release!: () => void;
+  globalThis.fetch = jest.fn(async (url: string) => {
+    if (url.endsWith('/auth/login')) return respond(200, { access_token: jwt('user', 2_000_000_100) });
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    return respond(401, { detail: 'Invalid token' });
+  }) as unknown as typeof fetch;
+
+  const pending = apiRequest('/metrics', { token: oldToken }).catch(() => undefined);
+  await act(() => session.signOut());
+  await act(() => session.signIn('a@b.com', 'secret123'));
+  await act(async () => {
+    release();
+    await pending;
+  });
+
+  expect(screen.getByText('signedIn:user')).toBeTruthy();
+});
