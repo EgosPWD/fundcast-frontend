@@ -1,5 +1,3 @@
-import { ScreenPlaceholder } from '@/components/screen-placeholder';
+import { TrainingScreen } from '@/features/training/training-screen';
 
-export default function TrainingScreen() {
-  return <ScreenPlaceholder title="Entrenamiento" description="Sube un CSV de entrenamiento y reentrena el modelo." />;
-}
+export default TrainingScreen;
