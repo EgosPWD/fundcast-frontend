@@ -87,6 +87,16 @@ describe('apiRequest', () => {
     expect(error.detail).toBe('Error del servidor (HTTP 502)');
   });
 
+  it('turns a 2xx response that is not JSON into ApiError', async () => {
+    mockFetch(200, null, { json: false });
+
+    const error = await rejection(apiRequest('/metrics'));
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.status).toBe(200);
+    expect(error.detail).toBe('Respuesta inválida del servidor');
+  });
+
   it('reports a network failure as ApiError with status 0', async () => {
     globalThis.fetch = jest.fn(async () => {
       throw new TypeError('Network request failed');

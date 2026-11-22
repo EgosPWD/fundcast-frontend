@@ -84,5 +84,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     if (response.status === 401 && token) onUnauthorized?.(token);
     throw new ApiError(response.status, detail);
   }
-  return (await response.json()) as T;
+  try {
+    return (await response.json()) as T;
+  } catch {
+    // A 2xx that is not JSON (proxy page, wrong base URL): keep the ApiError promise.
+    throw new ApiError(response.status, 'Respuesta inválida del servidor');
+  }
 }
