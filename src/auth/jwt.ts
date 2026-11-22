@@ -7,9 +7,27 @@ export interface Claims {
   expiresAt: number;
 }
 
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+
+/**
+ * base64url → text without relying on a global `atob` (not guaranteed on every Hermes
+ * build). The backend's payload is ASCII JSON, so each byte maps to one character.
+ */
 function decodeBase64Url(segment: string): string {
-  const base64 = segment.replace(/-/g, '+').replace(/_/g, '/');
-  return atob(base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '='));
+  let bits = 0;
+  let buffer = 0;
+  let text = '';
+  for (const char of segment.replace(/=+$/, '')) {
+    const value = ALPHABET.indexOf(char === '+' ? '-' : char === '/' ? '_' : char);
+    if (value < 0) throw new Error('invalid base64url');
+    buffer = (buffer << 6) | value;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      text += String.fromCharCode((buffer >> bits) & 0xff);
+    }
+  }
+  return text;
 }
 
 /**

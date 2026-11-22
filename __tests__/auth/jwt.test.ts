@@ -28,3 +28,22 @@ describe('decodeClaims', () => {
     },
   );
 });
+
+describe('decodeClaims without a global atob', () => {
+  const originalAtob = globalThis.atob;
+  beforeEach(() => {
+    // Hermes builds may not provide atob: decoding must not depend on it.
+    (globalThis as { atob?: unknown }).atob = undefined;
+  });
+  afterEach(() => {
+    globalThis.atob = originalAtob;
+  });
+
+  it('still reads the claims', () => {
+    expect(decodeClaims(token({ sub: '12', role: 'admin', exp: 2_000_000_000, name: 'n>>?' }))).toEqual({
+      userId: 12,
+      role: 'admin',
+      expiresAt: 2_000_000_000_000,
+    });
+  });
+});
