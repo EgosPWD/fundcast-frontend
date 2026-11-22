@@ -7,6 +7,7 @@ Es el trabajo final de la materia de IA.
 
 ## 1. Contrato con la API
 - El contrato está en `docs/openapi.json` del backend. Ahí está la fuente de verdad de rutas, campos y códigos; no inventes campos.
+- Los tipos de TypeScript del contrato están en `src/api/schema.ts`, generados con `npm run gen:api` desde `../fundcast-api/docs/openapi.json`. No lo edites a mano: regenéralo cuando cambie el backend. Usa los alias de `src/api/types.ts` y el cliente `src/api/client.ts` (`apiRequest`, `ApiError`).
 - Para la URL base usa `EXPO_PUBLIC_API_URL`. Se incrusta en el bundle al construir, así que **nunca pongas secretos en variables `EXPO_PUBLIC_*`**.
 - Autenticación: JWT en el header `Authorization: Bearer <token>`. El token se obtiene con `POST /auth/login`.
 - Errores: siempre JSON con la forma `{"detail": "..."}`.
@@ -28,6 +29,10 @@ Es el trabajo final de la materia de IA.
 | Métricas del modelo y versiones | `GET /metrics` | user, admin |
 | Subir el CSV de entrenamiento | `POST /training-files` (multipart, campo `file`) | admin |
 | Reentrenar | `POST /retrain` | admin |
+
+### Pruebas
+- `npm test` corre jest (preset `jest-expo`) con `@testing-library/react-native`. Las pruebas van en `__tests__/`, **nunca dentro de `src/app/`**, porque ahí cada archivo es una ruta.
+- Antes de cada commit corre `npm test`, `npm run typecheck` y `npm run lint`.
 
 ## 2. Flujo de Git (Git Flow)
 - `main`: solo versiones estables y entregables. Nunca se hace commit directo.
