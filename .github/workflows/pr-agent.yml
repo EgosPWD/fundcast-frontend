@@ -11,8 +11,13 @@ permissions:
   pull-requests: write
   issues: write
 
+# Only a newer push to the same PR cancels a review in progress. Comment runs get their
+# own group: otherwise a bot comment (whose job is skipped) cancels the real review.
 concurrency:
-  group: pr-agent-${{ github.event.pull_request.number || github.event.issue.number }}
+  group: >-
+    pr-agent-${{ github.event_name == 'issue_comment'
+    && format('comment-{0}', github.run_id)
+    || format('pr-{0}', github.event.pull_request.number) }}
   cancel-in-progress: true
 
 jobs:
