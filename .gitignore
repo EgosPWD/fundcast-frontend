@@ -30,14 +30,25 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files (never commit secrets)
+.env
 .env*.local
 
 # typescript
 *.tsbuildinfo
 
-example
 
 # generated native folders
 /ios
 /android
+
+# reset-project moves the template here
+example
+
+# test coverage
+coverage/
+
+# agent tooling (local, not versioned)
+.claude/settings.local.json
+.atl/
+odd/

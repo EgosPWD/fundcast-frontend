@@ -1,0 +1,11 @@
+node_modules
+.expo
+dist
+web-build
+.git
+.github
+.claude
+.vscode
+.env
+.env*.local
+*.md

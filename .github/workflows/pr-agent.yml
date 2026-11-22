@@ -1,0 +1,40 @@
+name: PR Agent
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: pr-agent-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr_agent_job:
+    if: >-
+      github.event.sender.type != 'Bot' &&
+      (github.event_name != 'issue_comment' || github.event.issue.pull_request != null)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: PR Agent
+        uses: The-PR-Agent/pr-agent@v0.50.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          OPENAI__API_BASE: https://opencode.ai/inference/go/openai/v1
+          CONFIG__MODEL: openai/deepseek-v4.1-flash
+          CONFIG__FALLBACK_MODELS: "[]"
+          OPENAI_CUSTOM_HEADERS: |-
+            x-opencode-session: pr-agent-${{ github.repository_id }}
+            User-Agent: pr-agent-action/0.50
+          github_action_config.auto_describe: "true"
+          github_action_config.auto_review: "true"
+          github_action_config.auto_improve: "false"
+          github_action_config.handle_push_trigger: "true"
