@@ -1,56 +1,64 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import type { CategoryWarning, PredictResponse } from '@/api/types';
+import { Amount } from '@/components/amount';
+import { Notice } from '@/components/notice';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
-import { formatUsd, formatUsdCompact } from '@/lib/format';
+import { Radius, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+import { formatUsd } from '@/lib/format';
 
 function Row({ label, value }: { label: string; value: string }) {
+  const theme = useTheme();
   return (
-    <ThemedView type="backgroundElement" style={styles.row}>
+    <View style={[styles.row, { borderTopColor: theme.border }]}>
       <ThemedText type="small" themeColor="textSecondary">
         {label}
       </ThemedText>
-      <ThemedText type="smallBold">{value}</ThemedText>
-    </ThemedView>
+      <ThemedText type="mono">{value}</ThemedText>
+    </View>
   );
 }
 
+/** The hero of the app: the estimated amount, its range and the model's own caveats. */
 export function ResultCard({ result }: { result: PredictResponse }) {
+  const theme = useTheme();
   const [low, high] = result.range_usd;
   return (
-    <ThemedView type="backgroundElement" style={styles.card} accessibilityLabel="Resultado de la predicción">
-      <ThemedText type="small" themeColor="textSecondary">
+    <View
+      accessibilityLabel="Resultado de la predicción"
+      style={[styles.card, { borderColor: theme.accent, backgroundColor: theme.accentSoft }]}>
+      <ThemedText type="label" themeColor="textSecondary">
         Monto estimado
       </ThemedText>
-      <ThemedText type="subtitle">{formatUsdCompact(result.estimated_amount_usd)}</ThemedText>
-      <ThemedText>{formatUsd(result.estimated_amount_usd)}</ThemedText>
-      <Row label="Rango probable" value={`${formatUsd(low)} – ${formatUsd(high)}`} />
-      <ThemedText type="small" themeColor="textSecondary">
-        El rango es la estimación multiplicada y dividida por 1,5 (el error mediano del modelo ronda el 50 %).
-      </ThemedText>
-      <Row label="log10 del monto" value={result.estimated_log10.toFixed(2)} />
-      <Row label="Modelo" value={`Versión ${result.model_version}`} />
-      {result.warning ? (
-        <ThemedText accessibilityLabel="Aviso del modelo" accessibilityRole="alert" style={styles.warning}>
-          {result.warning}
+      <Amount value={result.estimated_amount_usd} format="compact" size="hero" themeColor="accent" />
+      <Amount value={result.estimated_amount_usd} themeColor="textSecondary" />
+
+      <View style={styles.details}>
+        <Row label="Rango probable" value={`${formatUsd(low)} – ${formatUsd(high)}`} />
+        <ThemedText type="small" themeColor="textSecondary" style={styles.note}>
+          El rango es la estimación multiplicada y dividida por 1,5 (el error mediano del modelo ronda el 50 %).
         </ThemedText>
+        <Row label="log10 del monto" value={result.estimated_log10.toFixed(2)} />
+        <Row label="Modelo" value={`Versión ${result.model_version}`} />
+      </View>
+
+      {result.warning ? (
+        <Notice tone="warning" accessibilityLabel="Aviso del modelo" message={result.warning} />
       ) : null}
       {result.warnings?.length ? (
-        <ThemedView accessibilityLabel="Avisos de categorías" style={styles.warnings}>
+        <View accessibilityLabel="Avisos de categorías" style={styles.warnings}>
           {result.warnings.map((warning) => (
-            <ThemedText
+            <Notice
               key={`${warning.field}:${warning.value}`}
-              type="small"
-              accessibilityRole="alert"
-              style={styles.warning}>
-              {warningMessage(warning)}
-            </ThemedText>
+              tone="warning"
+              title="Categoría desconocida"
+              message={warningMessage(warning)}
+            />
           ))}
-        </ThemedView>
+        </View>
       ) : null}
-    </ThemedView>
+    </View>
   );
 }
 
@@ -69,8 +77,17 @@ function warningMessage({ field, value }: CategoryWarning): string {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.two },
-  row: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.two, flexWrap: 'wrap' },
-  warning: { color: '#B06000' },
-  warnings: { gap: Spacing.one, backgroundColor: 'transparent' },
+  card: { borderWidth: 1, borderRadius: Radius.md, padding: Spacing.four, gap: Spacing.two },
+  details: { marginTop: Spacing.two, gap: Spacing.two },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: Spacing.two,
+    flexWrap: 'wrap',
+    borderTopWidth: 1,
+    paddingTop: Spacing.two,
+  },
+  note: { fontSize: 13, lineHeight: 18, fontWeight: 400 },
+  warnings: { gap: Spacing.two },
 });

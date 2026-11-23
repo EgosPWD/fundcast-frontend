@@ -3,7 +3,7 @@ import { FlatList, Modal, Pressable, StyleSheet, TextInput } from 'react-native'
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing, TouchTarget } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 const EMPTY_ENTRY = '\u0000empty';
@@ -53,7 +53,7 @@ export function OptionPicker({ label, value, options, onChange, disabled = false
     close();
   }
 
-  const border = { borderColor: theme.backgroundSelected };
+  const border = { borderColor: theme.border, backgroundColor: theme.background };
   return (
     <>
       <Pressable
@@ -64,12 +64,19 @@ export function OptionPicker({ label, value, options, onChange, disabled = false
         disabled={disabled}
         onPress={() => setOpen(true)}
         style={[styles.field, border, disabled && styles.disabled]}>
-        <ThemedText themeColor={value ? 'text' : 'textSecondary'}>{value || `Elegir ${label.toLowerCase()}`}</ThemedText>
+        <ThemedText themeColor={value ? 'text' : 'textSecondary'} numberOfLines={1} style={styles.valueText}>
+          {value || `Elegir ${label.toLowerCase()}`}
+        </ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" importantForAccessibility="no">
+          ▾
+        </ThemedText>
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
         <ThemedView style={styles.backdrop}>
-          <ThemedView style={[styles.sheet, { backgroundColor: theme.backgroundElement }]}>
-            <ThemedText type="smallBold">{label}</ThemedText>
+          <ThemedView style={[styles.sheet, { backgroundColor: theme.background, borderColor: theme.border }]}>
+            <ThemedText type="label" themeColor="textSecondary">
+              {label}
+            </ThemedText>
             <TextInput
               accessibilityLabel={`Buscar: ${label}`}
               placeholder="Escribe para filtrar"
@@ -104,14 +111,14 @@ export function OptionPicker({ label, value, options, onChange, disabled = false
                     accessibilityLabel={text}
                     accessibilityState={{ selected }}
                     onPress={() => choose(chosen)}
-                    style={[styles.option, selected && { backgroundColor: theme.backgroundSelected }]}>
-                    <ThemedText>{text}</ThemedText>
+                    style={[styles.option, selected && { backgroundColor: theme.accentSoft }]}>
+                    <ThemedText style={selected ? { color: theme.accent, fontWeight: '700' } : undefined}>{text}</ThemedText>
                   </Pressable>
                 );
               }}
             />
             <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" onPress={close} style={styles.close}>
-              <ThemedText type="linkPrimary">Cerrar</ThemedText>
+              <ThemedText type="link">Cerrar</ThemedText>
             </Pressable>
           </ThemedView>
         </ThemedView>
@@ -121,17 +128,29 @@ export function OptionPicker({ label, value, options, onChange, disabled = false
 }
 
 const styles = StyleSheet.create({
-  field: { borderWidth: 1, borderRadius: Spacing.two, padding: Spacing.three },
+  field: {
+    borderWidth: 1,
+    borderRadius: Radius.sm,
+    minHeight: TouchTarget,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    fontSize: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  valueText: { flex: 1 },
   backdrop: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.four,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  sheet: { width: '100%', maxWidth: 420, maxHeight: '80%', borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.two },
+  sheet: { width: '100%', maxWidth: 420, maxHeight: '80%', borderRadius: Radius.md, borderWidth: 1, padding: Spacing.three, gap: Spacing.two },
   disabled: { opacity: 0.5 },
   list: { flexGrow: 0 },
-  option: { paddingVertical: Spacing.two, paddingHorizontal: Spacing.three, borderRadius: Spacing.two },
-  close: { alignSelf: 'flex-end' },
+  option: { minHeight: TouchTarget, justifyContent: 'center', paddingHorizontal: Spacing.three, borderRadius: Radius.sm },
+  close: { alignSelf: 'flex-end', minHeight: TouchTarget, justifyContent: 'center', paddingHorizontal: Spacing.two },
 });

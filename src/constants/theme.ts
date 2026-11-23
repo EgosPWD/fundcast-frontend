@@ -1,26 +1,41 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://unistyl.es/), etc.
- */
-
 import '@/global.css';
 
 import { Platform } from 'react-native';
 
+/**
+ * Design tokens: a warm "ledger paper" palette with ink text, hairline borders and ONE accent
+ * (emerald) reserved for primary actions, the predicted amount and the active tab.
+ */
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: '#151513',
+    textSecondary: '#5E5B53',
+    background: '#F6F4EF',
+    backgroundElement: '#EDEAE2',
+    backgroundSelected: '#E3DFD5',
+    border: '#DAD6CA',
+    accent: '#0F7B5A',
+    accentText: '#FFFFFF',
+    accentSoft: '#DCEEE6',
+    warning: '#7F5200',
+    warningSoft: '#F5E9CC',
+    danger: '#A52F1C',
+    dangerSoft: '#F6DCD5',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: '#ECEAE4',
+    textSecondary: '#A19E94',
+    background: '#121210',
+    backgroundElement: '#1B1B18',
+    backgroundSelected: '#26261F',
+    border: '#2F2E29',
+    accent: '#3DD9A4',
+    accentText: '#082118',
+    accentSoft: '#12302A',
+    warning: '#E8B95C',
+    warningSoft: '#2B2314',
+    danger: '#F2907E',
+    dangerSoft: '#321B16',
   },
 } as const;
 
@@ -60,6 +75,10 @@ export const Spacing = {
   five: 32,
   six: 64,
 } as const;
+
+export const Radius = { sm: 6, md: 10 } as const;
+/** Minimum touch target (px). */
+export const TouchTarget = 44;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;

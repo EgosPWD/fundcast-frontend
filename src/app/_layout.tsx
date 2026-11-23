@@ -1,7 +1,25 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import { useColorScheme } from 'react-native';
 
 import { SessionProvider, useSession } from '@/auth/session';
+import { Colors } from '@/constants/theme';
+
+function navigationTheme(scheme: 'light' | 'dark'): Theme {
+  const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  const c = Colors[scheme];
+  return {
+    ...base,
+    colors: {
+      ...base.colors,
+      primary: c.accent,
+      background: c.background,
+      card: c.background,
+      text: c.text,
+      border: c.border,
+      notification: c.accent,
+    },
+  };
+}
 
 function RootNavigator() {
   const { status } = useSession();
@@ -25,7 +43,7 @@ function RootNavigator() {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={navigationTheme(colorScheme === 'dark' ? 'dark' : 'light')}>
       <SessionProvider>
         <RootNavigator />
       </SessionProvider>

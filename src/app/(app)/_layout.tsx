@@ -3,7 +3,8 @@ import { Pressable, StyleSheet } from 'react-native';
 
 import { useSession } from '@/auth/session';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Spacing, TouchTarget } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 function SignOutButton() {
   const { signOut } = useSession();
@@ -20,8 +21,21 @@ function SignOutButton() {
 
 export default function AppLayout() {
   const { isAdmin } = useSession();
+  const theme = useTheme();
   return (
-    <Tabs screenOptions={{ headerRight: () => <SignOutButton /> }}>
+    <Tabs
+      screenOptions={{
+        headerRight: () => <SignOutButton />,
+        headerShadowVisible: false,
+        headerStyle: { backgroundColor: theme.background, borderBottomWidth: 1, borderBottomColor: theme.border },
+        headerTitleStyle: { color: theme.text, fontWeight: '700', fontSize: 17 },
+        headerTintColor: theme.text,
+        tabBarActiveTintColor: theme.accent,
+        tabBarInactiveTintColor: theme.textSecondary,
+        tabBarLabelStyle: { fontWeight: '600', fontSize: 12 },
+        tabBarStyle: { backgroundColor: theme.background, borderTopWidth: 1, borderTopColor: theme.border },
+        sceneStyle: { backgroundColor: theme.background },
+      }}>
       <Tabs.Screen name="index" options={{ href: null }} />
       <Tabs.Screen name="predict" options={{ title: 'Predecir' }} />
       <Tabs.Screen name="history" options={{ title: 'Historial' }} />
@@ -33,4 +47,6 @@ export default function AppLayout() {
   );
 }
 
-const styles = StyleSheet.create({ signOut: { paddingHorizontal: Spacing.three } });
+const styles = StyleSheet.create({
+  signOut: { paddingHorizontal: Spacing.three, minHeight: TouchTarget, justifyContent: 'center' },
+});
