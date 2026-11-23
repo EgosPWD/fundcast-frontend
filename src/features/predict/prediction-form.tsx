@@ -12,7 +12,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { fetchOptions, requestPrediction } from './api';
 import { OptionPicker } from './option-picker';
 import { ResultCard } from './result-card';
-import { emptyPredictForm, fieldLabels, type PredictField, validatePredictForm } from './validation';
+import { defaultPredictForm, fieldLabels, type PredictField, validatePredictForm } from './validation';
 
 type OptionsState =
   | { status: 'loading' }
@@ -25,23 +25,21 @@ function errorMessage(e: unknown): string {
   return e.detail;
 }
 
-const OPTIONAL_FIELDS: { field: PredictField; keyboard?: KeyboardTypeOptions }[] = [
-  { field: 'city' },
-  { field: 'investor_count', keyboard: 'number-pad' },
-  { field: 'lead_investor' },
-  { field: 'news_mentions', keyboard: 'number-pad' },
-  { field: 'news_source' },
-  { field: 'company_domain' },
-  { field: 'prev_rounds', keyboard: 'number-pad' },
-  { field: 'prev_amount_usd', keyboard: 'decimal-pad' },
-];
+const ROUND_YEARS = Array.from({ length: 8 }, (_, i) => String(2019 + i));
+const FIRST_FOUNDED_YEAR = 2000;
+
+function foundedYears(roundYear: string): string[] {
+  const last = /^\d{4}$/.test(roundYear) ? Number(roundYear) : 2026;
+  // Newest first: recent founding years are the common case.
+  return Array.from({ length: Math.max(last - FIRST_FOUNDED_YEAR + 1, 0) }, (_, i) => String(last - i));
+}
 
 export function PredictionForm() {
   const theme = useTheme();
   const { token } = useSession();
   const [optionsState, setOptionsState] = useState<OptionsState>({ status: 'loading' });
   const [reloadKey, setReloadKey] = useState(0);
-  const [values, setValues] = useState(emptyPredictForm);
+  const [values, setValues] = useState(defaultPredictForm);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<PredictResponse | null>(null);
@@ -66,7 +64,13 @@ export function PredictionForm() {
   }
 
   function update(field: PredictField, text: string) {
-    setValues((current) => ({ ...current, [field]: text }));
+    setValues((current) => {
+      const next = { ...current, [field]: text };
+      // Dependent fields: a city belongs to its country; a founding year cannot follow the round year.
+      if (field === 'country' && text !== current.country) next.city = '';
+      if (field === 'year' && next.founded_year && Number(next.founded_year) > Number(text)) next.founded_year = '';
+      return next;
+    });
     // The shown estimate belongs to the previous inputs: hide it as soon as they change.
     setResult(null);
   }
@@ -133,11 +137,27 @@ export function PredictionForm() {
   }
 
   const { options } = optionsState;
-  const pickers: { field: 'stage' | 'sector' | 'country'; list: string[] }[] = [
-    { field: 'stage', list: options.stages },
-    { field: 'sector', list: options.sectors },
-    { field: 'country', list: options.countries },
-  ];
+  // A backend older than this form omits the new lists: the pickers stay empty.
+  const cities = options.cities_by_country?.[values.country] ?? [];
+  const hasPreviousRounds = Number(values.prev_rounds) > 0;
+  const picker = (
+    field: PredictField,
+    list: string[],
+    extra: { required?: boolean; disabled?: boolean; allowFreeText?: boolean; emptyLabel?: string } = {},
+  ) => (
+    <ThemedView key={field} style={styles.group}>
+      <ThemedText type="small">{extra.required ? `${fieldLabels[field]} *` : fieldLabels[field]}</ThemedText>
+      <OptionPicker
+        label={fieldLabels[field]}
+        value={values[field]}
+        options={list}
+        disabled={extra.disabled}
+        allowFreeText={extra.allowFreeText}
+        emptyLabel={extra.emptyLabel}
+        onChange={(value) => update(field, value)}
+      />
+    </ThemedView>
+  );
   return (
     <ScrollView style={{ backgroundColor: theme.background }} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <ThemedView style={styles.card}>
@@ -146,22 +166,24 @@ export function PredictionForm() {
           Completa los datos de la ronda. Los campos marcados con * son obligatorios.
         </ThemedText>
 
-        {textField('year', 'number-pad', true)}
-        {textField('founded_year', 'number-pad', true)}
-        {pickers.map(({ field, list }) => (
-          <ThemedView key={field} style={styles.group}>
-            <ThemedText type="small">{fieldLabels[field]} *</ThemedText>
-            <OptionPicker
-              label={fieldLabels[field]}
-              value={values[field]}
-              options={list}
-              onChange={(value) => update(field, value)}
-            />
-          </ThemedView>
-        ))}
+        {picker('year', ROUND_YEARS, { required: true })}
+        {picker('founded_year', foundedYears(values.year), { required: true })}
+        {picker('stage', options.stages, { required: true })}
+        {picker('sector', options.sectors, { required: true })}
+        {picker('country', options.countries, { required: true })}
 
         <ThemedText type="smallBold">Opcionales</ThemedText>
-        {OPTIONAL_FIELDS.map(({ field, keyboard }) => textField(field, keyboard))}
+        {picker('city', cities, { disabled: !values.country, emptyLabel: 'Sin especificar' })}
+        {textField('investor_count', 'number-pad')}
+        {picker('lead_investor', options.lead_investors ?? [], { allowFreeText: true, emptyLabel: 'Sin especificar' })}
+        {textField('news_mentions', 'number-pad')}
+        {picker('news_source', options.news_sources ?? [], { emptyLabel: 'Otra / no está en la lista' })}
+        {textField('company_domain')}
+        <ThemedText type="small" themeColor="textSecondary">
+          Si el dominio existe en los datos, se usa su historial en lugar de los campos manuales de la ronda anterior.
+        </ThemedText>
+        {textField('prev_rounds', 'number-pad')}
+        {hasPreviousRounds ? textField('prev_amount_usd', 'decimal-pad') : null}
 
         {error ? (
           <ThemedText accessibilityRole="alert" style={styles.error}>

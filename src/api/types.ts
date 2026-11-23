@@ -9,6 +9,7 @@ export type TokenResponse = Schemas['TokenResponse'];
 export type UserResponse = Schemas['UserResponse'];
 export type PredictRequest = Schemas['PredictRequest'];
 export type PredictResponse = Schemas['PredictResponse'];
+export type CategoryWarning = Schemas['CategoryWarningSchema'];
 export type PredictionItem = Schemas['PredictionItem'];
 export type PredictionPage = Schemas['PredictionPage'];
 export type MetricsResponse = Schemas['MetricsResponse'];
