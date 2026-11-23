@@ -25,6 +25,9 @@ export default function AppLayout() {
   return (
     <Tabs
       screenOptions={{
+        // Each screen renders its own PageHeader, so the app bar shows the product name
+        // instead of repeating the tab title.
+        headerTitle: 'Fundcast',
         headerRight: () => <SignOutButton />,
         headerShadowVisible: false,
         headerStyle: { backgroundColor: theme.background, borderBottomWidth: 1, borderBottomColor: theme.border },

@@ -87,3 +87,13 @@ it('signs out from the app header', async () => {
 
   expect(mockSession.current.signOut).toHaveBeenCalledTimes(1);
 });
+
+it('shows the product name in the app header so the page title appears once', async () => {
+  mockSession.current = makeSession('signedIn', 'user');
+
+  await renderRouter(routes, { initialUrl: '/metrics' });
+
+  await waitFor(() => expect(screen).toHavePathname('/metrics'));
+  expect(screen.getByText('Fundcast')).toBeTruthy();
+  expect(screen.getAllByRole('header', { name: 'Métricas' })).toHaveLength(1);
+});
