@@ -4,9 +4,10 @@ import { StyleSheet } from 'react-native';
 
 import { ApiError } from '@/api/client';
 import type { TrainingFileResponse } from '@/api/types';
+import { Section } from '@/components/section';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 
 import { ActionButton } from './action-button';
 import { uploadTrainingFile, validateCsvAsset } from './api';
@@ -50,12 +51,10 @@ export function UploadSection({ token }: { token: string | null }) {
   }
 
   return (
-    <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedText type="smallBold">Subir archivo de entrenamiento</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        Sube un CSV (máximo 20 MB) con las columnas del dataset. Sus filas se agregan a los datos
-        de entrenamiento; reentrena el modelo para usarlas.
-      </ThemedText>
+    <Section
+      index="1"
+      title="Subir CSV"
+      description="Sube un CSV (máximo 20 MB) con las columnas del dataset. Sus filas se agregan a los datos de entrenamiento; reentrena el modelo para usarlas.">
       <ActionButton
         label="Seleccionar y subir CSV"
         busy={busy}
@@ -63,8 +62,8 @@ export function UploadSection({ token }: { token: string | null }) {
       />
       {error ? <ErrorText message={error} /> : null}
       {result ? (
-        <ThemedView type="backgroundSelected" style={styles.result}>
-          <ThemedText type="small">{result.filename}</ThemedText>
+        <ThemedView type="backgroundElement" style={styles.result}>
+          <ThemedText type="smallBold">{result.filename}</ThemedText>
           <StatRow label="Filas en el archivo" value={String(result.rows)} />
           <StatRow label="Filas insertadas" value={String(result.rows_inserted)} />
           <StatRow label="Filas rechazadas" value={String(result.rows_rejected)} />
@@ -75,11 +74,10 @@ export function UploadSection({ token }: { token: string | null }) {
           </ThemedText>
         </ThemedView>
       ) : null}
-    </ThemedView>
+    </Section>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.three },
-  result: { borderRadius: Spacing.two, padding: Spacing.three, gap: Spacing.two },
+  result: { borderRadius: Radius.md, padding: Spacing.three, gap: Spacing.two },
 });

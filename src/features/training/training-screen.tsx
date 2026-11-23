@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { useSession } from '@/auth/session';
-import { ThemedText } from '@/components/themed-text';
+import { PageHeader } from '@/components/page-header';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
@@ -14,7 +14,10 @@ export function TrainingScreen() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <ThemedText type="subtitle">Entrenamiento</ThemedText>
+        <PageHeader
+          title="Entrenamiento"
+          subtitle="Dos pasos: primero carga datos nuevos, después reentrena el modelo para usarlos."
+        />
         <UploadSection token={token} />
         <RetrainSection token={token} />
       </ScrollView>

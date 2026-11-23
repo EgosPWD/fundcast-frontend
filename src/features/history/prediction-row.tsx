@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { PredictionItem, PredictRequest } from '@/api/types';
+import { Amount } from '@/components/amount';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { formatUsd, formatUsdCompact } from '@/lib/format';
+import { formatUsd } from '@/lib/format';
 
 import { formatDateTime } from './format-date';
 
@@ -33,30 +33,33 @@ function display(value: PredictRequest[keyof PredictRequest]): string {
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
-    <ThemedView type="backgroundElement" style={styles.field}>
-      <ThemedText type="small" themeColor="textSecondary">
+    <View style={styles.field}>
+      <ThemedText type="small" themeColor="textSecondary" style={styles.fieldLabel}>
         {label}
       </ThemedText>
-      <ThemedText type="small">{value}</ThemedText>
-    </ThemedView>
+      <ThemedText type="mono" style={styles.fieldValue}>
+        {value}
+      </ThemedText>
+    </View>
   );
 }
 
+/** One ledger line: date and key inputs on the left, amount right-aligned; tap to expand. */
 export function PredictionRow({ item, showUser }: { item: PredictionItem; showUser: boolean }) {
   const theme = useTheme();
   const [expanded, setExpanded] = useState(false);
   const { input } = item;
 
   return (
-    <ThemedView type="backgroundElement" style={styles.card}>
+    <View style={[styles.row, { borderBottomColor: theme.border }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`Ver detalle de la predicción ${item.id}`}
         accessibilityState={{ expanded }}
         onPress={() => setExpanded((value) => !value)}
         style={styles.summary}>
-        <ThemedView type="backgroundElement" style={styles.summaryText}>
-          <ThemedText type="small" themeColor="textSecondary">
+        <View style={styles.summaryText}>
+          <ThemedText type="mono" themeColor="textSecondary" style={styles.date}>
             {formatDateTime(item.created_at)}
           </ThemedText>
           <ThemedText type="smallBold">{`${input.stage} · ${input.sector} · ${input.country}`}</ThemedText>
@@ -68,31 +71,43 @@ export function PredictionRow({ item, showUser }: { item: PredictionItem; showUs
               {`Usuario ${item.user_id}`}
             </ThemedText>
           ) : null}
-        </ThemedView>
-        <ThemedText type="default">{formatUsdCompact(item.estimated_amount_usd)}</ThemedText>
+        </View>
+        <Amount value={item.estimated_amount_usd} format="compact" size="large" themeColor="accent" />
       </Pressable>
 
       {expanded ? (
-        <ThemedView
-          type="backgroundElement"
-          style={[styles.details, { borderTopColor: theme.backgroundSelected }]}>
-          <ThemedText type="smallBold">Datos enviados</ThemedText>
+        <View style={styles.details}>
+          <ThemedText type="label" themeColor="textSecondary">
+            Datos enviados
+          </ThemedText>
           {INPUT_FIELDS.map(({ key, label }) => (
             <Field key={key} label={label} value={display(input[key])} />
           ))}
-          <ThemedText type="smallBold">Resultado</ThemedText>
+          <ThemedText type="label" themeColor="textSecondary" style={styles.resultLabel}>
+            Resultado
+          </ThemedText>
           <Field label="Monto estimado" value={formatUsd(item.estimated_amount_usd)} />
           <Field label="log10 del monto" value={item.estimated_log10.toFixed(2)} />
-        </ThemedView>
+        </View>
       ) : null}
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: Spacing.two, padding: Spacing.three, gap: Spacing.two },
-  summary: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  row: { borderBottomWidth: 1 },
+  summary: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    paddingVertical: Spacing.three,
+  },
   summaryText: { flex: 1, gap: Spacing.half },
-  details: { borderTopWidth: 1, paddingTop: Spacing.two, gap: Spacing.one },
+  date: { fontSize: 12, lineHeight: 16 },
+  details: { paddingBottom: Spacing.three, gap: Spacing.one },
+  resultLabel: { marginTop: Spacing.two },
   field: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.three },
+  fieldLabel: { flexShrink: 1 },
+  fieldValue: { flexShrink: 1, textAlign: 'right' },
 });

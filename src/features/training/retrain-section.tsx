@@ -3,9 +3,11 @@ import { StyleSheet, View } from 'react-native';
 
 import { ApiError } from '@/api/client';
 import type { RetrainResponse } from '@/api/types';
+import { Section } from '@/components/section';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { formatPercent } from '@/lib/format';
 
 import { ActionButton } from './action-button';
@@ -19,11 +21,12 @@ function retrainErrorMessage(e: unknown): string {
 }
 
 function ActivationBadge({ activated }: { activated: boolean }) {
+  const theme = useTheme();
   return (
     <View
       accessibilityLabel={activated ? 'Versión activada' : 'Versión inactiva'}
-      style={[styles.badge, { backgroundColor: activated ? '#1E8E3E' : '#B06000' }]}>
-      <ThemedText type="smallBold" style={styles.badgeText}>
+      style={[styles.badge, { backgroundColor: activated ? theme.accent : theme.warning }]}>
+      <ThemedText type="label" style={{ color: activated ? theme.accentText : theme.background }}>
         {activated ? 'Activada' : 'Inactiva'}
       </ThemedText>
     </View>
@@ -49,17 +52,14 @@ export function RetrainSection({ token }: { token: string | null }) {
   }
 
   return (
-    <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedText type="smallBold">Reentrenar el modelo</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        Entrena una versión nueva con todas las rondas cargadas (partición 80/20 nueva). La versión
-        nueva se activa solo si MAE_log nuevo ≤ MAE_log activo + 0,01; si no, se guarda inactiva y
-        la API sigue usando la versión activa. Puede tardar unos 20 segundos.
-      </ThemedText>
+    <Section
+      index="2"
+      title="Reentrenar"
+      description="Entrena una versión nueva con todas las rondas cargadas (partición 80/20 nueva). La versión nueva se activa solo si MAE_log nuevo ≤ MAE_log activo + 0,01; si no, se guarda inactiva y la API sigue usando la versión activa. Puede tardar unos 20 segundos.">
       <ActionButton label="Reentrenar modelo" busy={busy} onPress={() => void retrain()} />
       {error ? <ErrorText message={error} /> : null}
       {result ? (
-        <ThemedView type="backgroundSelected" style={styles.result}>
+        <ThemedView type="backgroundElement" style={styles.result}>
           <View style={styles.header}>
             <ThemedText type="smallBold">{`Versión ${result.version}`}</ThemedText>
             <ActivationBadge activated={result.activated} />
@@ -76,14 +76,12 @@ export function RetrainSection({ token }: { token: string | null }) {
           ) : null}
         </ThemedView>
       ) : null}
-    </ThemedView>
+    </Section>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.three },
-  result: { borderRadius: Spacing.two, padding: Spacing.three, gap: Spacing.two },
+  result: { borderRadius: Radius.md, padding: Spacing.three, gap: Spacing.two },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  badge: { borderRadius: Spacing.two, paddingHorizontal: Spacing.two, paddingVertical: Spacing.half },
-  badgeText: { color: '#ffffff' },
+  badge: { borderRadius: Radius.sm, paddingHorizontal: Spacing.two, paddingVertical: Spacing.half },
 });

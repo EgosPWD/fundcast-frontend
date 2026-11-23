@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, type KeyboardTypeOptions } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, type KeyboardTypeOptions } from 'react-native';
 
 import { ApiError } from '@/api/client';
 import type { OptionsResponse, PredictResponse } from '@/api/types';
 import { useSession } from '@/auth/session';
-import { ThemedText } from '@/components/themed-text';
+import { Button } from '@/components/button';
+import { Field } from '@/components/field';
+import { Notice } from '@/components/notice';
+import { PageHeader } from '@/components/page-header';
+import { Section } from '@/components/section';
+import { TextField } from '@/components/text-field';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { fetchOptions, requestPrediction } from './api';
@@ -94,44 +99,32 @@ export function PredictionForm() {
     }
   }
 
-  const input = [styles.input, { color: theme.text, borderColor: theme.backgroundSelected }];
-  function textField(field: PredictField, keyboard?: KeyboardTypeOptions, required = false) {
+  function textField(field: PredictField, keyboard?: KeyboardTypeOptions, helper?: string) {
     return (
-      <ThemedView key={field} style={styles.group}>
-        <ThemedText type="small">{required ? `${fieldLabels[field]} *` : fieldLabels[field]}</ThemedText>
-        <TextInput
-          accessibilityLabel={fieldLabels[field]}
-          placeholderTextColor={theme.textSecondary}
-          autoCapitalize={field === 'company_domain' ? 'none' : 'sentences'}
-          keyboardType={keyboard}
-          value={values[field]}
-          onChangeText={(text) => update(field, text)}
-          style={input}
-        />
-      </ThemedView>
+      <TextField
+        key={field}
+        label={fieldLabels[field]}
+        helper={helper}
+        autoCapitalize={field === 'company_domain' ? 'none' : 'sentences'}
+        keyboardType={keyboard}
+        value={values[field]}
+        onChangeText={(text) => update(field, text)}
+      />
     );
   }
 
   if (optionsState.status === 'loading') {
     return (
       <ThemedView style={styles.centered}>
-        <ActivityIndicator accessibilityLabel="Cargando opciones" color={theme.text} />
+        <ActivityIndicator accessibilityLabel="Cargando opciones" color={theme.accent} />
       </ThemedView>
     );
   }
   if (optionsState.status === 'error') {
     return (
       <ThemedView style={styles.centered}>
-        <ThemedText accessibilityRole="alert" style={styles.error}>
-          {optionsState.message}
-        </ThemedText>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Reintentar"
-          onPress={retryOptions}
-          style={[styles.button, { backgroundColor: theme.text }]}>
-          <ThemedText style={{ color: theme.background }}>Reintentar</ThemedText>
-        </Pressable>
+        <Notice tone="error" message={optionsState.message} style={styles.errorNotice} />
+        <Button label="Reintentar" variant="secondary" onPress={retryOptions} />
       </ThemedView>
     );
   }
@@ -145,8 +138,7 @@ export function PredictionForm() {
     list: string[],
     extra: { required?: boolean; disabled?: boolean; allowFreeText?: boolean; emptyLabel?: string } = {},
   ) => (
-    <ThemedView key={field} style={styles.group}>
-      <ThemedText type="small">{extra.required ? `${fieldLabels[field]} *` : fieldLabels[field]}</ThemedText>
+    <Field key={field} label={fieldLabels[field]} required={extra.required}>
       <OptionPicker
         label={fieldLabels[field]}
         value={values[field]}
@@ -156,53 +148,50 @@ export function PredictionForm() {
         emptyLabel={extra.emptyLabel}
         onChange={(value) => update(field, value)}
       />
-    </ThemedView>
+    </Field>
   );
   return (
     <ScrollView style={{ backgroundColor: theme.background }} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <ThemedView style={styles.card}>
-        <ThemedText type="subtitle">Predecir</ThemedText>
-        <ThemedText themeColor="textSecondary">
-          Completa los datos de la ronda. Los campos marcados con * son obligatorios.
-        </ThemedText>
+        <PageHeader
+          title="Predecir"
+          subtitle="Completa los datos de la ronda. Los campos marcados con * son obligatorios."
+        />
 
-        {picker('year', ROUND_YEARS, { required: true })}
-        {picker('founded_year', foundedYears(values.year), { required: true })}
-        {picker('stage', options.stages, { required: true })}
-        {picker('sector', options.sectors, { required: true })}
-        {picker('country', options.countries, { required: true })}
+        <Section index="1" title="La ronda" description="Datos básicos de la ronda que quieres estimar.">
+          {picker('year', ROUND_YEARS, { required: true })}
+          {picker('founded_year', foundedYears(values.year), { required: true })}
+          {picker('stage', options.stages, { required: true })}
+          {picker('sector', options.sectors, { required: true })}
+          {picker('country', options.countries, { required: true })}
+        </Section>
 
-        <ThemedText type="smallBold">Opcionales</ThemedText>
-        {picker('city', cities, { disabled: !values.country, emptyLabel: 'Sin especificar' })}
-        {textField('investor_count', 'number-pad')}
-        {picker('lead_investor', options.lead_investors ?? [], { allowFreeText: true, emptyLabel: 'Sin especificar' })}
-        {textField('news_mentions', 'number-pad')}
-        {picker('news_source', options.news_sources ?? [], { emptyLabel: 'Otra / no está en la lista' })}
-        {textField('company_domain')}
-        <ThemedText type="small" themeColor="textSecondary">
-          Si el dominio existe en los datos, se usa su historial en lugar de los campos manuales de la ronda anterior.
-        </ThemedText>
-        {textField('prev_rounds', 'number-pad')}
-        {hasPreviousRounds ? textField('prev_amount_usd', 'decimal-pad') : null}
+        <Section
+          index="2"
+          title="Ubicación e inversores"
+          description="Opcional. Cuanto más completo, más ajustada la estimación.">
+          {picker('city', cities, { disabled: !values.country, emptyLabel: 'Sin especificar' })}
+          {textField('investor_count', 'number-pad')}
+          {picker('lead_investor', options.lead_investors ?? [], { allowFreeText: true, emptyLabel: 'Sin especificar' })}
+        </Section>
 
-        {error ? (
-          <ThemedText accessibilityRole="alert" style={styles.error}>
-            {error}
-          </ThemedText>
-        ) : null}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Estimar monto"
-          accessibilityState={{ disabled: busy }}
-          disabled={busy}
-          onPress={() => void submit()}
-          style={[styles.button, { backgroundColor: theme.text, opacity: busy ? 0.6 : 1 }]}>
-          {busy ? (
-            <ActivityIndicator color={theme.background} />
-          ) : (
-            <ThemedText style={{ color: theme.background }}>Estimar monto</ThemedText>
+        <Section index="3" title="Prensa y empresa" description="Opcional. Señales de visibilidad de la empresa.">
+          {textField('news_mentions', 'number-pad')}
+          {picker('news_source', options.news_sources ?? [], { emptyLabel: 'Otra / no está en la lista' })}
+          {textField(
+            'company_domain',
+            undefined,
+            'Si el dominio existe en los datos, se usa su historial en lugar de los campos manuales de la ronda anterior.',
           )}
-        </Pressable>
+        </Section>
+
+        <Section index="4" title="Financiación previa" description="Opcional. Rondas que la empresa ya cerró.">
+          {textField('prev_rounds', 'number-pad')}
+          {hasPreviousRounds ? textField('prev_amount_usd', 'decimal-pad') : null}
+        </Section>
+
+        {error ? <Notice tone="error" message={error} /> : null}
+        <Button label="Estimar monto" busy={busy} onPress={() => void submit()} />
 
         {result ? <ResultCard result={result} /> : null}
       </ThemedView>
@@ -212,10 +201,7 @@ export function PredictionForm() {
 
 const styles = StyleSheet.create({
   container: { padding: Spacing.four, alignItems: 'center' },
-  card: { width: '100%', maxWidth: 520, gap: Spacing.three },
+  card: { width: '100%', maxWidth: MaxContentWidth - 200, gap: Spacing.four },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.three, padding: Spacing.four },
-  group: { gap: Spacing.one },
-  input: { borderWidth: 1, borderRadius: Spacing.two, padding: Spacing.three, fontSize: 16 },
-  button: { borderRadius: Spacing.two, padding: Spacing.three, alignItems: 'center' },
-  error: { color: '#D93025' },
+  errorNotice: { alignSelf: 'stretch', maxWidth: 520 },
 });
