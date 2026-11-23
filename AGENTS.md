@@ -1,106 +1,67 @@
-# Fundcast Frontend: contexto del proyecto
+# Fundcast Frontend: guía para agentes
 
-Cliente web (Expo / React Native) de **Startup Funding API**, que estima el monto en USD de una ronda de financiación de una startup.
-Es el trabajo final de la materia de IA.
-- Idioma de los documentos: español. Código y nombres técnicos: inglés.
-- El backend vive en **otro repositorio**: [EgosPWD/fundcast-api](https://github.com/EgosPWD/fundcast-api). Este repo solo consume su API.
+Cliente web y móvil (Expo SDK 58, React Native, Expo Router, TypeScript) de Startup Funding API, que estima el monto en USD de una ronda de financiación. Trabajo final de la materia de IA. El backend vive en [EgosPWD/fundcast-api](https://github.com/EgosPWD/fundcast-api), normalmente clonado en `../fundcast-api`.
 
-## 1. Contrato con la API
-- El contrato está en `docs/openapi.json` del backend. Ahí está la fuente de verdad de rutas, campos y códigos; no inventes campos.
-- Para la URL base usa `EXPO_PUBLIC_API_URL`. Se incrusta en el bundle al construir, así que **nunca pongas secretos en variables `EXPO_PUBLIC_*`**.
-- Autenticación: JWT en el header `Authorization: Bearer <token>`. El token se obtiene con `POST /auth/login`.
-- Errores: siempre JSON con la forma `{"detail": "..."}`.
+- Idioma: documentos, commits, PR y textos de la interfaz en español; código, identificadores y comentarios en inglés.
 
-  | Código | Significado |
-  |---|---|
-  | 401 | sin token o con un token inválido; vuelve al login |
-  | 403 | el rol no tiene permiso |
-  | 409 | conflicto: email ya registrado o reentrenamiento en curso |
-  | 422 | entrada inválida; muestra el `detail` |
-  | 503 | no hay un modelo activo |
-- El origen del cliente debe estar en `CORS_ORIGINS` del backend (por ejemplo, `http://localhost:8081` en desarrollo).
+## Comandos
 
-| Pantalla / función | Endpoint | Rol |
-|---|---|---|
-| Registro e inicio de sesión | `POST /auth/register`, `POST /auth/login` | público |
-| Enviar datos y ver la predicción | `POST /predict` | user, admin |
-| Historial de predicciones (paginado) | `GET /predictions?page=&size=` | user (solo las suyas), admin (todas) |
-| Métricas del modelo y versiones | `GET /metrics` | user, admin |
-| Subir el CSV de entrenamiento | `POST /training-files` (multipart, campo `file`) | admin |
-| Reentrenar | `POST /retrain` | admin |
+```bash
+npm test               # jest (preset jest-expo) + @testing-library/react-native
+npm run typecheck      # tsc --noEmit
+npm run lint           # expo lint
+npm run gen:api        # regenera src/api/schema.ts desde ../fundcast-api/docs/openapi.json
+npx expo install <pkg> # para agregar dependencias: resuelve versiones compatibles con el SDK
+```
 
-## 2. Flujo de Git (Git Flow)
-- `main`: solo versiones estables y entregables. Nunca se hace commit directo.
-- `develop`: rama de integración. Todo trabajo nuevo sale de aquí y vuelve aquí.
-- `feature/<nombre>`: una por entrega, con un nombre que describa lo que entrega (por ejemplo, `feature/login-screen` o `feature/prediction-form`). Sale de `develop` y vuelve por Pull Request a `develop`.
-- `release/<versión>`: sale de `develop` para preparar una entrega. Se fusiona en `main` con el tag `vX.Y.Z` y después de vuelta en `develop`.
-- `hotfix/<nombre>`: sale de `main` para corregir algo urgente. Se fusiona en `main` y en `develop`.
+Antes de cada commit: `npm test`, `npm run typecheck` y `npm run lint`.
 
-### Commits (Conventional Commits)
-Formato: `<tipo>(<alcance opcional>): <descripción en español, imperativo, minúscula>`. El `<tipo>` y el alcance van en inglés.
-- Tipos: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `build`, `ci`, `perf`, `style`.
-- Ejemplos: `feat(auth): agrega la pantalla de inicio de sesión`, `fix(predict): muestra el detalle de un error 422`.
-- Commits pequeños y coherentes: cada uno con su código y sus pruebas.
-- Sin atribuciones de IA (`Co-Authored-By` u otras) en los mensajes.
+## Estructura
 
-### Pull Requests
-- Título y descripción **en español**. El título sigue el formato de Conventional Commits.
-- **PR Agent** (`.github/workflows/pr-agent.yml`) describe y revisa cada PR de forma automática. Necesita el secreto `OPENAI_KEY` en el repo. También se le puede pedir en un comentario: `/review`, `/describe`, `/improve`.
-- Los hallazgos válidos se corrigen, se responde en el hilo y el hilo se resuelve antes de fusionar.
+- `src/app/`: rutas de Expo Router. Cada archivo es una pantalla; las pantallas solo montan un componente de `src/features/`. `(app)/_layout.tsx` protege las pestañas con `Tabs.Protected` (la de entrenamiento solo para admin).
+- `src/features/<feature>/`: lógica y componentes de cada función (`predict`, `history`, `metrics`, `training`).
+- `src/api/`: `client.ts` (`apiRequest`, `ApiError`), `types.ts` (alias de tipos) y `schema.ts` (generado).
+- `src/auth/`: sesión y almacenamiento del token (`token-storage.ts` con SecureStore, `.web.ts` con localStorage).
+- Pruebas en `__tests__/`, **nunca dentro de `src/app/`** (ahí cada archivo sería una ruta).
 
-## 3. Seguridad
-- `.env` nunca va en git. Las variables públicas del cliente (`EXPO_PUBLIC_*`) no son secretas.
-- No guardes contraseñas. Guarda solo el token, y bórralo al cerrar sesión o al recibir un 401.
+## Contrato con la API
 
-## 4. Docker
-`Dockerfile` en dos etapas: `npx expo export --platform web` genera archivos estáticos (`web.output: "static"`) y nginx los sirve en el puerto 80.
+- Fuente de verdad: `docs/openapi.json` del backend. No inventes rutas ni campos.
+- `src/api/schema.ts` es generado: no se edita a mano, se regenera con `npm run gen:api` cuando cambia el backend. Usa los alias de `src/api/types.ts`.
+- Todas las llamadas pasan por `apiRequest`. Los errores llegan como `ApiError` con `status` y `detail`; muestra el `detail` del backend.
+- Un 401 de una petición con token cierra la sesión (`setUnauthorizedHandler` en `src/auth/session.tsx`).
+- Las categorías del formulario de predicción vienen de `GET /options` y se envían tal cual: el modelo compara el texto exacto.
+- URL base: `EXPO_PUBLIC_API_URL`. Se incrusta en el bundle al construir: **nunca pongas secretos en `EXPO_PUBLIC_*`**. El origen del cliente debe estar en `CORS_ORIGINS` del backend.
+
+## Pruebas
+
+- En RNTL 14, `render` y `fireEvent` son asíncronos: siempre con `await`.
+- Las variables que usa una fábrica de `jest.mock` deben empezar con `mock`.
+- `fetch` se simula en cada prueba (`globalThis.fetch = jest.fn(...)`); las pruebas no llaman al backend real.
+
+## Expo
+
+Expo cambia mucho entre SDK: antes de usar una API de Expo o React Native, consulta la documentación de la versión instalada (`https://docs.expo.dev/versions/v58.0.0/`, o el índice `https://docs.expo.dev/llms.txt`), no la memoria.
+- Navegación solo con Expo Router (`Link`, `router`, `useLocalSearchParams` desde `expo-router`).
+- No existen `ios/` ni `android/`: se generan (Continuous Native Generation). La configuración nativa va en `app.json`.
+
+## Seguridad
+
+- `.env` nunca va en git.
+- No guardes contraseñas: solo el token, que se borra al cerrar sesión o al recibir un 401.
+
+## Docker
+
+`Dockerfile` en dos etapas: `npx expo export --platform web` (`web.output: "static"`) y nginx sirve los archivos en el puerto 80.
 ```bash
 docker build --build-arg EXPO_PUBLIC_API_URL=http://localhost:8000 -t fundcast-frontend .
 docker run --rm -p 8080:80 fundcast-frontend
 ```
 
----
+## Git
 
-# Expo guidelines
-
-This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
-
-## Expo has changed — do not trust your training data
-
-Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:
-
-1. Read the major version of the `expo` package in `package.json`.
-2. Fetch the matching versioned docs: `https://docs.expo.dev/versions/v<major>.0.0/`
-3. For anything else, fetch https://docs.expo.dev/llms.txt — an index of all Expo docs with corrections to common LLM misconceptions. Follow its links to the specific page you need; never answer from memory.
-
-## Commands
-
-Use `bunx` instead of `npx` if the project uses bun (`bun.lock` present).
-
-```bash
-npx expo install <package>  # ALWAYS use instead of npm/yarn/pnpm/bun add — resolves SDK-compatible versions
-npx expo start              # start the dev server
-npx expo lint               # lint
-npx tsc --noEmit            # typecheck
-npx expo-doctor             # diagnose dependency and config issues
-npx expo install --fix      # fix incompatible package versions
-```
-
-Run lint and typecheck before declaring any task done.
-
-## Navigation & Routing
-
-- Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
-- Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
-- Docs: https://docs.expo.dev/router/introduction.md
-
-## Building with EAS
-
-Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
-Docs: https://docs.expo.dev/eas/index.md
-
-## Rules
-
-- If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
-- Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
-- Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+- Git Flow: `main` (entregas, sin commits directos), `develop` (integración), `feature/<nombre>` desde `develop` con PR a `develop`, `release/<versión>` (merge a `main` con tag `vX.Y.Z` y de vuelta a `develop`), `hotfix/<nombre>` desde `main`.
+- Conventional Commits: `<tipo>(<alcance>): <descripción en español, imperativo, minúscula>`, por ejemplo `fix(predict): muestra el detalle de un error 422`. Cada commit lleva su código con sus pruebas.
+- Sin atribuciones de IA (`Co-Authored-By` u otras).
+- PR con título y descripción en español. PR Agent (`.github/workflows/pr-agent.yml`, secreto `OPENAI_KEY`) revisa cada PR automáticamente; también responde a `/review`, `/describe` y `/improve` en un comentario. Los hallazgos válidos se corrigen y se responden antes de fusionar.
+- Un PR que depende de un cambio del contrato se fusiona después del PR del backend.
