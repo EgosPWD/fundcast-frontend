@@ -107,10 +107,10 @@ export interface paths {
         };
         /**
          * Get Options
-         * @description Sectors, stages and countries present in the data, for the prediction form.
+         * @description Categories of the active model for the prediction form, plus the cities of each country.
          *
-         *     The model only knows these exact strings: any other text is treated as an unknown
-         *     category and gets an average estimate, so offer them as a closed list.
+         *     Offer them as closed lists: the model matches categories by exact text, and any other
+         *     text is treated as unknown. After a retrain activates a new version the lists change.
          */
         get: operations["get_options_options_get"];
         put?: never;
@@ -193,6 +193,18 @@ export interface components {
              */
             file: string;
         };
+        /** CategoryWarningSchema */
+        CategoryWarningSchema: {
+            /**
+             * Code
+             * @description `unknown_category`: the value is treated as unknown
+             */
+            code: string;
+            /** Field */
+            field: string;
+            /** Value */
+            value: string;
+        };
         /** ErrorResponse */
         ErrorResponse: {
             /** Detail */
@@ -251,15 +263,26 @@ export interface components {
         };
         /**
          * OptionsResponse
-         * @description Exact values the model knows; send them as they are (case-sensitive).
+         * @description Vocabulary of the ACTIVE model (sorted, case-sensitive); send values as they are.
+         *     Any other text is treated as unknown (average estimate) and reported in `warnings`.
          */
         OptionsResponse: {
-            /** Sectors */
-            sectors: string[];
             /** Stages */
             stages: string[];
+            /** Sectors */
+            sectors: string[];
             /** Countries */
             countries: string[];
+            /** Cities By Country */
+            cities_by_country: {
+                [key: string]: string[];
+            };
+            /** Lead Investors */
+            lead_investors: string[];
+            /** News Sources */
+            news_sources: string[];
+            /** Model Version */
+            model_version: number;
         };
         /**
          * PredictRequest
@@ -315,7 +338,7 @@ export interface components {
             news_mentions?: number | null;
             /**
              * News Source
-             * @example TechCrunch
+             * @example techcrunch.com
              */
             news_source?: string | null;
             /**
@@ -351,6 +374,11 @@ export interface components {
             model_version: number;
             /** Warning */
             warning?: string | null;
+            /**
+             * Warnings
+             * @description One entry per categorical value the model does not know
+             */
+            warnings?: components["schemas"]["CategoryWarningSchema"][];
         };
         /** PredictionItem */
         PredictionItem: {

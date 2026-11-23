@@ -36,6 +36,9 @@ export const emptyPredictForm: PredictFormValues = {
   prev_amount_usd: '',
 };
 
+/** Form state on first render: investor and mention counts default to the training median. */
+export const defaultPredictForm: PredictFormValues = { ...emptyPredictForm, investor_count: '1', news_mentions: '1' };
+
 /** User-visible label of each field (also the input's accessibility label). */
 export const fieldLabels: Record<PredictField, string> = {
   year: 'Año de la ronda',
@@ -94,7 +97,8 @@ function build(values: PredictFormValues): PredictRequest {
     if (count < 0) throw new FormError(`${fieldLabels[field]} no puede ser negativo.`);
     body[field] = count;
   }
-  const amount = text('prev_amount_usd');
+  // The previous amount only makes sense with previous rounds.
+  const amount = (body.prev_rounds ?? 0) > 0 ? text('prev_amount_usd') : '';
   if (amount) {
     const value = Number(amount);
     if (!Number.isFinite(value) || value <= 0) {
