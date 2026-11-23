@@ -91,5 +91,6 @@ it.each(['0', '-5', 'abc'])('rejects a non-positive previous amount: %s', (amoun
 
 it('ignores the previous amount when there are no previous rounds', () => {
   const result = validatePredictForm({ ...minimal, prev_rounds: '0', prev_amount_usd: '500000' });
-  expect(result.ok && result.body).toEqual(expect.not.objectContaining({ prev_amount_usd: expect.anything() }));
+  expect(result.ok).toBe(true);
+  expect(result.ok && result.body).not.toHaveProperty('prev_amount_usd');
 });

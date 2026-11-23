@@ -47,9 +47,9 @@ const contractResponse = {
 type Reply = { status: number; body: unknown };
 
 /** GET /options always succeeds; POST /predict answers with `predict`. */
-function mockApi(predict: Reply = { status: 200, body: contractResponse }) {
+function mockApi(predict: Reply = { status: 200, body: contractResponse }, optionsBody: unknown = options) {
   const fetchMock = jest.fn(async (url: string, init: RequestInit) => {
-    const reply = url.endsWith('/options') && init.method === 'GET' ? { status: 200, body: options } : predict;
+    const reply = url.endsWith('/options') && init.method === 'GET' ? { status: 200, body: optionsBody } : predict;
     return { ok: reply.status >= 200 && reply.status < 300, status: reply.status, json: async () => reply.body };
   });
   globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -228,6 +228,27 @@ it('accepts a free-text lead investor and sends null-equivalent (omitted) news s
   const body = JSON.parse(post[1].body as string);
   expect(body.lead_investor).toBe('Nuevo Fondo');
   expect(body).not.toHaveProperty('news_source');
+});
+
+it('offers the existing investor, not free text, when the typed name differs only in case', async () => {
+  mockApi();
+  await render(<PredictScreen />);
+
+  await fireEvent.press(await screen.findByRole('button', { name: 'Inversor líder' }));
+  await fireEvent.changeText(screen.getByLabelText('Buscar: Inversor líder'), 'y combinator');
+
+  expect(screen.getByRole('button', { name: 'Y Combinator' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Usar "y combinator"' })).toBeNull();
+});
+
+it('renders the form with options from a backend without the new lists', async () => {
+  const { sectors, stages, countries } = options;
+  mockApi(undefined, { sectors, stages, countries });
+  await render(<PredictScreen />);
+  await fillRequired();
+
+  await fireEvent.press(screen.getByRole('button', { name: 'Inversor líder' }));
+  expect(screen.getByLabelText('Buscar: Inversor líder')).toBeTruthy();
 });
 
 it('caps the rendered results of a very large list', async () => {

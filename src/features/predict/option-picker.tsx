@@ -34,7 +34,9 @@ export function OptionPicker({ label, value, options, onChange, disabled = false
   const matches = needle ? options.filter((option) => option.toLowerCase().includes(needle)) : options;
   const truncated = matches.length > MAX_VISIBLE_OPTIONS;
   const typed = query.trim();
-  const freeText = allowFreeText && typed && !options.includes(typed) ? typed : null;
+  // An existing option typed in another case is offered as itself, never as free text.
+  const known = typed && options.some((option) => option.toLowerCase() === typed.toLowerCase());
+  const freeText = allowFreeText && typed && !known ? typed : null;
   const visible = [
     ...(emptyLabel ? [EMPTY_ENTRY] : []),
     ...(freeText ? [FREE_TEXT_ENTRY] : []),

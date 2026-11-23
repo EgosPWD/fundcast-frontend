@@ -137,7 +137,8 @@ export function PredictionForm() {
   }
 
   const { options } = optionsState;
-  const cities = options.cities_by_country[values.country] ?? [];
+  // A backend older than this form omits the new lists: the pickers stay empty.
+  const cities = options.cities_by_country?.[values.country] ?? [];
   const hasPreviousRounds = Number(values.prev_rounds) > 0;
   const picker = (
     field: PredictField,
@@ -174,9 +175,9 @@ export function PredictionForm() {
         <ThemedText type="smallBold">Opcionales</ThemedText>
         {picker('city', cities, { disabled: !values.country, emptyLabel: 'Sin especificar' })}
         {textField('investor_count', 'number-pad')}
-        {picker('lead_investor', options.lead_investors, { allowFreeText: true, emptyLabel: 'Sin especificar' })}
+        {picker('lead_investor', options.lead_investors ?? [], { allowFreeText: true, emptyLabel: 'Sin especificar' })}
         {textField('news_mentions', 'number-pad')}
-        {picker('news_source', options.news_sources, { emptyLabel: 'Otra / no está en la lista' })}
+        {picker('news_source', options.news_sources ?? [], { emptyLabel: 'Otra / no está en la lista' })}
         {textField('company_domain')}
         <ThemedText type="small" themeColor="textSecondary">
           Si el dominio existe en los datos, se usa su historial en lugar de los campos manuales de la ronda anterior.
